@@ -1,5 +1,5 @@
 #noinspection RubyResolve,SpellCheckingInspection
-class CassandraAT3 < Formula
+class CassandraAT31110 < Formula
   desc "Eventually consistent, distributed key-value store"
   homepage "https://cassandra.apache.org"
   url "https://www.apache.org/dyn/closer.lua?path=cassandra/3.11.10/apache-cassandra-3.11.10-bin.tar.gz"
