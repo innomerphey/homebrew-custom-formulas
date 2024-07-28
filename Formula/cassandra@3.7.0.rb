@@ -1,21 +1,22 @@
-class Cassandra < Formula
+class CassandraAT370 < Formula
+  include Language::Python::Virtualenv
+
   desc "Eventually consistent, distributed key-value store"
   homepage "https://cassandra.apache.org"
-  url "https://www.apache.org/dyn/closer.lua/cassandra/3.7/apache-cassandra-3.7-bin.tar.gz"
-  mirror "https://archive.apache.org/dist/cassandra/3.7/apache-cassandra-3.7-bin.tar.gz"
+  url "https://www.apache.org/dyn/closer.lua?path=/cassandra/3.7/apache-cassandra-3.7-bin.tar.gz"
   sha256 "335f5344c4e6b98ec51324d821fa06e99101145ac6e83b5f6ede8c0ca5d15748"
+  license "Apache-2.0"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "35a653410f7c3c96c96812befd642b02d39fc41be4fbaf70e56fdf9366a47ec5" => :sierra
-    sha256 "8094fd82942fa2bd3e0206c489d3169d618f3fa9bba5995353a92d1117f19eb9" => :el_capitan
-    sha256 "49475a2e7daab60e5854b1514d50dd7cd4a943c5ec593dffc7b4243fe4798b23" => :yosemite
-    sha256 "c9f0fcbd738f3ecfd2eff5c654d1f385a617f3fa7a07e5c5b4344856bfa7da24" => :mavericks
+    sha256 cellar: :any_skip_relocation, sierra: "35a653410f7c3c96c96812befd642b02d39fc41be4fbaf70e56fdf9366a47ec5"
+    sha256 cellar: :any_skip_relocation, el_capitan: "8094fd82942fa2bd3e0206c489d3169d618f3fa9bba5995353a92d1117f19eb9"
+    sha256 cellar: :any_skip_relocation, yosemite: "49475a2e7daab60e5854b1514d50dd7cd4a943c5ec593dffc7b4243fe4798b23"
+    sha256 cellar: :any_skip_relocation, mavericks: "c9f0fcbd738f3ecfd2eff5c654d1f385a617f3fa7a07e5c5b4344856bfa7da24"
   end
 
-  depends_on :python if MacOS.version <= :snow_leopard
+  depends_on "openjdk@8"
+  depends_on "python@2"
 
-  # Only >=Yosemite has new enough setuptools for successful compile of the below deps.
   resource "setuptools" do
     url "https://files.pythonhosted.org/packages/7a/a8/5877fa2cec00f7678618fb465878fd9356858f0894b60c6960364b5cf816/setuptools-24.0.1.tar.gz"
     sha256 "5d3ae6f1cc9f1d3e1fe420c5daaeb8d79059fcb12624f4897d5ed8a9348ee1d2"
@@ -55,42 +56,35 @@ class Cassandra < Formula
     (var/"lib/cassandra").mkpath
     (var/"log/cassandra").mkpath
 
-    pypath = libexec/"vendor/lib/python2.7/site-packages"
-    ENV.prepend_create_path "PYTHONPATH", pypath
-    resources.each do |r|
-      r.stage do
-        system "python", *Language::Python.setup_install_args(libexec/"vendor")
-      end
-    end
+    venv = virtualenv_create(libexec/"vendor", "python2")
+    venv.pip_install resources
 
-    inreplace "conf/cassandra.yaml", "/var/lib/cassandra", "#{var}/lib/cassandra"
+    inreplace "conf/cassandra.yaml", "/var/lib/cassandra", var/"lib/cassandra"
     inreplace "conf/cassandra-env.sh", "/lib/", "/"
 
-    inreplace "bin/cassandra", "-Dcassandra.logdir\=$CASSANDRA_HOME/logs", "-Dcassandra.logdir\=#{var}/log/cassandra"
+    inreplace "bin/cassandra", "-Dcassandra.logdir=$CASSANDRA_HOME/logs", "-Dcassandra.logdir=#{var}/log/cassandra"
     inreplace "bin/cassandra.in.sh" do |s|
-      s.gsub! "CASSANDRA_HOME=\"`dirname \"$0\"`/..\"", "CASSANDRA_HOME=\"#{libexec}\""
+      s.gsub! 'CASSANDRA_HOME="`dirname "$0"`/.."', "CASSANDRA_HOME=\"#{libexec}\""
       # Store configs in etc, outside of keg
-      s.gsub! "CASSANDRA_CONF=\"$CASSANDRA_HOME/conf\"", "CASSANDRA_CONF=\"#{etc}/cassandra\""
+      s.gsub! 'CASSANDRA_CONF="$CASSANDRA_HOME/conf"', "CASSANDRA_CONF=\"#{etc}/cassandra\""
       # Jars installed to prefix, no longer in a lib folder
-      s.gsub! "\"$CASSANDRA_HOME\"/lib/*.jar", "\"$CASSANDRA_HOME\"/*.jar"
+      s.gsub! '"$CASSANDRA_HOME"/lib/*.jar', "\"$CASSANDRA_HOME\"/*.jar"
       # The jammm Java agent is not in a lib/ subdir either:
-      s.gsub! "JAVA_AGENT=\"$JAVA_AGENT -javaagent:$CASSANDRA_HOME/lib/jamm-", "JAVA_AGENT=\"$JAVA_AGENT -javaagent:$CASSANDRA_HOME/jamm-"
+      s.gsub! 'JAVA_AGENT="$JAVA_AGENT -javaagent:$CASSANDRA_HOME/lib/jamm-', 'JAVA_AGENT="$JAVA_AGENT -javaagent:$CASSANDRA_HOME/jamm-'
       # Storage path
-      s.gsub! "cassandra_storagedir\=\"$CASSANDRA_HOME/data\"", "cassandra_storagedir\=\"#{var}/lib/cassandra\""
+      s.gsub! 'cassandra_storagedir="$CASSANDRA_HOME/data"', "cassandra_storagedir=\"#{var}/lib/cassandra\""
     end
 
     rm Dir["bin/*.bat", "bin/*.ps1"]
 
-    # This breaks on `brew uninstall cassandra && brew install cassandra`
-    # https://github.com/Homebrew/homebrew/pull/38309
-    (etc/"cassandra").install Dir["conf/*"]
+    pkgetc.install Dir["conf/*"]
 
     libexec.install Dir["*.txt", "{bin,interface,javadoc,pylib,lib/licenses}"]
     libexec.install Dir["lib/*.jar"]
 
     pkgshare.install [libexec/"bin/cassandra.in.sh", libexec/"bin/stop-server"]
     inreplace Dir["#{libexec}/bin/cassandra*", "#{libexec}/bin/debug-cql", "#{libexec}/bin/nodetool", "#{libexec}/bin/sstable*"],
-              %r{`dirname "?\$0"?`/cassandra.in.sh},
+              %r{`dirname "\$0"`/cassandra.in.sh},
               "#{pkgshare}/cassandra.in.sh"
 
     # Make sure tools are installed
@@ -101,61 +95,43 @@ class Cassandra < Formula
     mv buildpath/"tools/bin/cassandra.in.sh", buildpath/"tools/bin/cassandra-tools.in.sh"
     inreplace buildpath/"tools/bin/cassandra-tools.in.sh" do |s|
       # Tools have slightly different path to CASSANDRA_HOME
-      s.gsub! "CASSANDRA_HOME=\"`dirname $0`/../..\"", "CASSANDRA_HOME=\"#{libexec}\""
+      s.gsub! 'CASSANDRA_HOME="`dirname $0`/../.."', "CASSANDRA_HOME=\"#{libexec}\""
       # Store configs in etc, outside of keg
-      s.gsub! "CASSANDRA_CONF=\"$CASSANDRA_HOME/conf\"", "CASSANDRA_CONF=\"#{etc}/cassandra\""
+      s.gsub! 'CASSANDRA_CONF="$CASSANDRA_HOME/conf"', "CASSANDRA_CONF=\"#{etc}/cassandra\""
       # Core Jars installed to prefix, no longer in a lib folder
-      s.gsub! "\"$CASSANDRA_HOME\"/lib/*.jar", "\"$CASSANDRA_HOME\"/*.jar"
+      s.gsub! '"$CASSANDRA_HOME"/lib/*.jar', "\"$CASSANDRA_HOME\"/*.jar"
       # Tools Jars are under tools folder
-      s.gsub! "\"$CASSANDRA_HOME\"/tools/lib/*.jar", "\"$CASSANDRA_HOME\"/tools/*.jar"
+      s.gsub! '"$CASSANDRA_HOME"/tools/lib/*.jar', "\"$CASSANDRA_HOME\"/tools/*.jar"
       # Storage path
-      s.gsub! "cassandra_storagedir\=\"$CASSANDRA_HOME/data\"", "cassandra_storagedir\=\"#{var}/lib/cassandra\""
+      s.gsub! 'cassandra_storagedir="$CASSANDRA_HOME/data"', "cassandra_storagedir=\"#{var}/lib/cassandra\""
     end
 
     pkgshare.install [buildpath/"tools/bin/cassandra-tools.in.sh"]
 
     # Update tools script files
     inreplace Dir[buildpath/"tools/bin/*"],
-              "`dirname \"$0\"`/cassandra.in.sh",
+              '`dirname "$0"`/cassandra.in.sh',
               "#{pkgshare}/cassandra-tools.in.sh"
 
-    # Make sure tools are available
+    # Ensure tools are available
     bin.install Dir[buildpath/"tools/bin/*"]
     bin.write_exec_script Dir["#{libexec}/bin/*"]
 
     rm %W[#{bin}/cqlsh #{bin}/cqlsh.py] # Remove existing exec scripts
-    (bin/"cqlsh").write_env_script libexec/"bin/cqlsh", :PYTHONPATH => pypath
-    (bin/"cqlsh.py").write_env_script libexec/"bin/cqlsh.py", :PYTHONPATH => pypath
+    (bin/"cqlsh").write_env_script libexec/"bin/cqlsh", PYTHONPATH: venv.env["PYTHONPATH"]
+    (bin/"cqlsh.py").write_env_script libexec/"bin/cqlsh.py", PYTHONPATH: venv.env["PYTHONPATH"]
   end
 
-  plist_options :manual => "cassandra -f"
-
-  def plist; <<-EOS.undent
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>KeepAlive</key>
-        <true/>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-            <string>#{opt_bin}/cassandra</string>
-            <string>-f</string>
-        </array>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>WorkingDirectory</key>
-        <string>#{var}/lib/cassandra</string>
-      </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_bin/"cassandra", "-f"]
+    keep_alive true
+    working_dir var/"lib/cassandra"
   end
 
   test do
     assert_match version.to_s, shell_output("#{bin}/cassandra -v")
-    # This is enough to error out if env script is broken/insufficient.
-    system bin/"cqlsh", "--version"
+
+    output = shell_output("#{bin}/cqlsh localhost 2>&1", 1)
+    assert_match "Connection error", output
   end
 end
