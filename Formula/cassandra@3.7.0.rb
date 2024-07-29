@@ -15,9 +15,6 @@ class CassandraAT370 < Formula
     sha256 cellar: :any_skip_relocation, mavericks: "c9f0fcbd738f3ecfd2eff5c654d1f385a617f3fa7a07e5c5b4344856bfa7da24"
   end
 
-  depends_on "openjdk@8"
-  depends_on "python@2"
-
   resource "setuptools" do
     url "https://files.pythonhosted.org/packages/7a/a8/5877fa2cec00f7678618fb465878fd9356858f0894b60c6960364b5cf816/setuptools-24.0.1.tar.gz"
     sha256 "5d3ae6f1cc9f1d3e1fe420c5daaeb8d79059fcb12624f4897d5ed8a9348ee1d2"
@@ -121,6 +118,10 @@ class CassandraAT370 < Formula
     rm %W[#{bin}/cqlsh #{bin}/cqlsh.py] # Remove existing exec scripts
     (bin/"cqlsh").write_env_script libexec/"bin/cqlsh", PYTHONPATH: venv.env["PYTHONPATH"]
     (bin/"cqlsh.py").write_env_script libexec/"bin/cqlsh.py", PYTHONPATH: venv.env["PYTHONPATH"]
+
+    unless system("brew list --cask | grep -q 'oracle-jdk@8.411'")
+      system("brew install --cask oracle-jdk@8.411") or raise "Failed to install oracle-jdk@8.411"
+    end
   end
 
   service do
