@@ -1,7 +1,4 @@
-#noinspection RubyResolve,SpellCheckingInspection
 class CassandraAT370 < Formula
-  include Language::Python::Virtualenv
-
   desc "Eventually consistent, distributed key-value store"
   homepage "https://cassandra.apache.org"
   url "https://archive.apache.org/dist/cassandra/3.7/apache-cassandra-3.7-bin.tar.gz"
@@ -14,6 +11,8 @@ class CassandraAT370 < Formula
     sha256 cellar: :any_skip_relocation, yosemite: "49475a2e7daab60e5854b1514d50dd7cd4a943c5ec593dffc7b4243fe4798b23"
     sha256 cellar: :any_skip_relocation, mavericks: "c9f0fcbd738f3ecfd2eff5c654d1f385a617f3fa7a07e5c5b4344856bfa7da24"
   end
+
+  depends_on "innomerphey/homebrew-custom-formulas/python@2.7"
 
   resource "setuptools" do
     url "https://files.pythonhosted.org/packages/7a/a8/5877fa2cec00f7678618fb465878fd9356858f0894b60c6960364b5cf816/setuptools-24.0.1.tar.gz"
@@ -54,10 +53,15 @@ class CassandraAT370 < Formula
     (var/"lib/cassandra").mkpath
     (var/"log/cassandra").mkpath
 
-    venv = virtualenv_create(libexec/"vendor", "python2")
-    venv.pip_install resources
+    pypath = libexec/"vendor/lib/python2.7/site-packages"
+    ENV.prepend_create_path "PYTHONPATH", pypath
+    resources.each do |r|
+      r.stage do
+        system "python", *Language::Python.setup_install_args(libexec/"vendor")
+      end
+    end
 
-    inreplace "conf/cassandra.yaml", "/var/lib/cassandra", var/"lib/cassandra"
+    inreplace "conf/cassandra.yaml", "/var/lib/cassandra", "#{var}/lib/cassandra"
     inreplace "conf/cassandra-env.sh", "/lib/", "/"
 
     inreplace "bin/cassandra", "-Dcassandra.logdir=$CASSANDRA_HOME/logs", "-Dcassandra.logdir=#{var}/log/cassandra"
@@ -75,7 +79,9 @@ class CassandraAT370 < Formula
 
     rm Dir["bin/*.bat", "bin/*.ps1"]
 
-    pkgetc.install Dir["conf/*"]
+    # This breaks on `brew uninstall cassandra && brew install cassandra`
+    # https://github.com/Homebrew/homebrew/pull/38309
+    (etc/"cassandra").install Dir["conf/*"]
 
     libexec.install Dir["*.txt", "{bin,interface,javadoc,pylib,lib/licenses}"]
     libexec.install Dir["lib/*.jar"]
@@ -111,13 +117,13 @@ class CassandraAT370 < Formula
               '`dirname "$0"`/cassandra.in.sh',
               "#{pkgshare}/cassandra-tools.in.sh"
 
-    # Ensure tools are available
+    # Make sure tools are available
     bin.install Dir[buildpath/"tools/bin/*"]
     bin.write_exec_script Dir["#{libexec}/bin/*"]
 
     rm %W[#{bin}/cqlsh #{bin}/cqlsh.py] # Remove existing exec scripts
-    (bin/"cqlsh").write_env_script libexec/"bin/cqlsh", PYTHONPATH: venv.env["PYTHONPATH"]
-    (bin/"cqlsh.py").write_env_script libexec/"bin/cqlsh.py", PYTHONPATH: venv.env["PYTHONPATH"]
+    (bin/"cqlsh").write_env_script libexec/"bin/cqlsh", PYTHONPATH: pypath
+    (bin/"cqlsh.py").write_env_script libexec/"bin/cqlsh.py", PYTHONPATH: pypath
 
     unless system("brew list --cask | grep -q 'oracle-jdk@8.411'")
       system("brew install --cask oracle-jdk@8.411") or raise "Failed to install oracle-jdk@8.411"
@@ -132,8 +138,7 @@ class CassandraAT370 < Formula
 
   test do
     assert_match version.to_s, shell_output("#{bin}/cassandra -v")
-
-    output = shell_output("#{bin}/cqlsh localhost 2>&1", 1)
-    assert_match "Connection error", output
+    # This is enough to error out if env script is broken/insufficient.
+    system bin/"cqlsh", "--version"
   end
 end
