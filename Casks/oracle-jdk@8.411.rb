@@ -1,7 +1,8 @@
 # noinspection RubyResolve,SpellCheckingInspection
 cask "oracle-jdk@8.411" do
   arch arm: "aarch64"
-  
+
+  version "8u411"
   sha256 arm: "03353ce3f8bd37488d116b29ede7ec82af05a82524868f4181be67d8c748c5f6"
 
   url "https://javadl.oracle.com/webapps/download/AutoDL?BundleId=249841_43d62d619be4e416215729597d70b8ac"
@@ -18,7 +19,7 @@ cask "oracle-jdk@8.411" do
 
   pkg "Java 8 Update 411.app/Contents/Resources/JavaAppletPlugin.pkg"
 
-  uninstall pkgutil: "com.oracle.jdk-#{version}"
+  uninstall pkgutil: "com.oracle.jdk8u411"
 
   # No zap stanza required
 
