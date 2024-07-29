@@ -1,3 +1,4 @@
+#noinspection RubyResolve,SpellCheckingInspection
 class CassandraAT370 < Formula
   include Language::Python::Virtualenv
 
