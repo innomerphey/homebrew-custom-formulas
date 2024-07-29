@@ -12,8 +12,6 @@ class CassandraAT370 < Formula
     sha256 cellar: :any_skip_relocation, mavericks: "c9f0fcbd738f3ecfd2eff5c654d1f385a617f3fa7a07e5c5b4344856bfa7da24"
   end
 
-  depends_on "innomerphey/homebrew-custom-formulas/python@2.7"
-
   resource "setuptools" do
     url "https://files.pythonhosted.org/packages/7a/a8/5877fa2cec00f7678618fb465878fd9356858f0894b60c6960364b5cf816/setuptools-24.0.1.tar.gz"
     sha256 "5d3ae6f1cc9f1d3e1fe420c5daaeb8d79059fcb12624f4897d5ed8a9348ee1d2"
@@ -53,11 +51,20 @@ class CassandraAT370 < Formula
     (var/"lib/cassandra").mkpath
     (var/"log/cassandra").mkpath
 
-    pypath = libexec/"vendor/lib/python2.7/site-packages"
+    ENV.prepend_path "PATH", "/usr/local/bin"
+
+    python2_path = "/usr/local/bin/python2"
+    pypath = libexec / "vendor/lib/python2.7/site-packages"
     ENV.prepend_create_path "PYTHONPATH", pypath
+    ENV["PYTHON"] = python2_path
+
+    ohai "Using Python at: #{python2_path}"
+    ohai "PYTHONPATH: #{ENV['PYTHONPATH']}"
+    ohai "PATH: #{ENV['PATH']}"
+
     resources.each do |r|
       r.stage do
-        system "python", *Language::Python.setup_install_args(libexec/"vendor")
+        system python2_path, *Language::Python.setup_install_args(libexec / "vendor")
       end
     end
 
@@ -124,10 +131,6 @@ class CassandraAT370 < Formula
     rm %W[#{bin}/cqlsh #{bin}/cqlsh.py] # Remove existing exec scripts
     (bin/"cqlsh").write_env_script libexec/"bin/cqlsh", PYTHONPATH: pypath
     (bin/"cqlsh.py").write_env_script libexec/"bin/cqlsh.py", PYTHONPATH: pypath
-
-    unless system("brew list --cask | grep -q 'oracle-jdk@8.411'")
-      system("brew install --cask oracle-jdk@8.411") or raise "Failed to install oracle-jdk@8.411"
-    end
   end
 
   service do
