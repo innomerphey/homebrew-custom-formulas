@@ -28,6 +28,7 @@ cask "oracle-jdk@8.411" do
   end
 end
 
+# if you want to install other version or architecture, you can use the following URL to get the correct URL:
 # https://sites.google.com/view/java-se-download-url-converter
 # 8u411 intel https://javadl.oracle.com/webapps/download/AutoDL?BundleId=249843_43d62d619be4e416215729597d70b8ac
-
+# https://gist.github.com/wavezhang/ba8425f24a968ec9b2a8619d7c2d86a6?permalink_comment_id=4633167
