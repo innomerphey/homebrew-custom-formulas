@@ -4,7 +4,7 @@ class CassandraAT370 < Formula
 
   desc "Eventually consistent, distributed key-value store"
   homepage "https://cassandra.apache.org"
-  url "https://www.apache.org/dyn/closer.lua?path=/cassandra/3.7/apache-cassandra-3.7-bin.tar.gz"
+  url "https://archive.apache.org/dist/cassandra/3.7/apache-cassandra-3.7-bin.tar.gz"
   sha256 "335f5344c4e6b98ec51324d821fa06e99101145ac6e83b5f6ede8c0ca5d15748"
   license "Apache-2.0"
 
