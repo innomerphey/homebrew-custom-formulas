@@ -48,8 +48,8 @@ class CassandraAT370 < Formula
   end
 
   def install
-    (var/"lib/cassandra").mkpath
-    (var/"log/cassandra").mkpath
+    (var / "lib/cassandra").mkpath
+    (var / "log/cassandra").mkpath
 
     ENV.prepend_path "PATH", "/usr/local/bin"
 
@@ -88,23 +88,23 @@ class CassandraAT370 < Formula
 
     # This breaks on `brew uninstall cassandra && brew install cassandra`
     # https://github.com/Homebrew/homebrew/pull/38309
-    (etc/"cassandra").install Dir["conf/*"]
+    (etc / "cassandra").install Dir["conf/*"]
 
     libexec.install Dir["*.txt", "{bin,interface,javadoc,pylib,lib/licenses}"]
     libexec.install Dir["lib/*.jar"]
 
-    pkgshare.install [libexec/"bin/cassandra.in.sh", libexec/"bin/stop-server"]
+    pkgshare.install [libexec / "bin/cassandra.in.sh", libexec / "bin/stop-server"]
     inreplace Dir["#{libexec}/bin/cassandra*", "#{libexec}/bin/debug-cql", "#{libexec}/bin/nodetool", "#{libexec}/bin/sstable*"],
               %r{`dirname "\$0"`/cassandra.in.sh},
               "#{pkgshare}/cassandra.in.sh"
 
     # Make sure tools are installed
-    rm Dir[buildpath/"tools/bin/*.bat"] # Delete before install to avoid copying useless files
-    (libexec/"tools").install Dir[buildpath/"tools/lib/*.jar"]
+    rm Dir[buildpath / "tools/bin/*.bat"] # Delete before install to avoid copying useless files
+    (libexec / "tools").install Dir[buildpath / "tools/lib/*.jar"]
 
     # Tools use different cassandra.in.sh and should be changed differently
-    mv buildpath/"tools/bin/cassandra.in.sh", buildpath/"tools/bin/cassandra-tools.in.sh"
-    inreplace buildpath/"tools/bin/cassandra-tools.in.sh" do |s|
+    mv buildpath / "tools/bin/cassandra.in.sh", buildpath / "tools/bin/cassandra-tools.in.sh"
+    inreplace buildpath / "tools/bin/cassandra-tools.in.sh" do |s|
       # Tools have slightly different path to CASSANDRA_HOME
       s.gsub! 'CASSANDRA_HOME="`dirname $0`/../.."', "CASSANDRA_HOME=\"#{libexec}\""
       # Store configs in etc, outside of keg
@@ -117,31 +117,31 @@ class CassandraAT370 < Formula
       s.gsub! 'cassandra_storagedir="$CASSANDRA_HOME/data"', "cassandra_storagedir=\"#{var}/lib/cassandra\""
     end
 
-    pkgshare.install [buildpath/"tools/bin/cassandra-tools.in.sh"]
+    pkgshare.install [buildpath / "tools/bin/cassandra-tools.in.sh"]
 
     # Update tools script files
-    inreplace Dir[buildpath/"tools/bin/*"],
+    inreplace Dir[buildpath / "tools/bin/*"],
               '`dirname "$0"`/cassandra.in.sh',
               "#{pkgshare}/cassandra-tools.in.sh"
 
     # Make sure tools are available
-    bin.install Dir[buildpath/"tools/bin/*"]
+    bin.install Dir[buildpath / "tools/bin/*"]
     bin.write_exec_script Dir["#{libexec}/bin/*"]
 
     rm %W[#{bin}/cqlsh #{bin}/cqlsh.py] # Remove existing exec scripts
-    (bin/"cqlsh").write_env_script libexec/"bin/cqlsh", PYTHONPATH: pypath
-    (bin/"cqlsh.py").write_env_script libexec/"bin/cqlsh.py", PYTHONPATH: pypath
+    (bin / "cqlsh").write_env_script libexec / "bin/cqlsh", PYTHONPATH: pypath
+    (bin / "cqlsh.py").write_env_script libexec / "bin/cqlsh.py", PYTHONPATH: pypath
   end
 
   service do
-    run [opt_bin/"cassandra", "-f"]
+    run [opt_bin / "cassandra", "-f"]
     keep_alive true
-    working_dir var/"lib/cassandra"
+    working_dir var / "lib/cassandra"
   end
 
   test do
     assert_match version.to_s, shell_output("#{bin}/cassandra -v")
     # This is enough to error out if env script is broken/insufficient.
-    system bin/"cqlsh", "--version"
+    system bin / "cqlsh", "--version"
   end
 end
