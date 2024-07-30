@@ -54,7 +54,8 @@ class CassandraAT370 < Formula
     ENV.prepend_path "PATH", "/usr/local/bin"
 
     python2_path = "/usr/local/bin/python2"
-    pypath = libexec / "vendor/lib/python2.7/site-packages"
+    user = ENV["USER"]
+    pypath = "/Users/#{user}/.asdf/installs/python/2.7.18/lib/python2.7/site-packages"
     ENV.prepend_create_path "PYTHONPATH", pypath
     ENV["PYTHON"] = python2_path
 
