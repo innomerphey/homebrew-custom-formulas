@@ -35,17 +35,21 @@ python -V &&  python2 -V &&  python3 -V
 sudo rm /usr/local/bin/python2
 sudo ln -s $(asdf where python)/bin/python2 /usr/local/bin/python2
 and chek the link
-ls -l /usr/local/bin/python2 /usr/local/bin/python2 --version
+ls -l /usr/local/bin/python2
+/usr/local/bin/python2 --version
 
 add python to path in .zshrc 
 export PATH="/opt/homebrew/opt/python@2.7/bin:$PATH"   #check if needed
 
 brew install innomerphey/custom-formulas/oracle-jdk@8.411
-then add java to path and set JAVA_HOME #check if needed
+
 
 .zshrc
-export PATH="/usr/local/opt/cassandra@3/bin:$PATH"
 export CASSANDRA_HOME=/usr/local/opt/cassandra@3
+export PATH=$CASSANDRA_HOME/bin:$PATH
+
+pip2 install Cython==0.24
+pip2 install setuptools==44.1.1
 
 brew install innomerphey/custom-formulas/cassandra@3.7.0  
 brew services start innomerphey/custom-formulas/cassandra@3.7.0
