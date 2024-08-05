@@ -44,9 +44,6 @@ export PATH="/opt/homebrew/opt/python@2.7/bin:$PATH"   #check if needed
 brew install innomerphey/custom-formulas/oracle-jdk@8.411
 
 
-.zshrc
-export CASSANDRA_HOME=/usr/local/opt/cassandra@3
-export PATH=$CASSANDRA_HOME/bin:$PATH
 
 pip2 install Cython==0.24
 pip2 install setuptools==44.1.1
