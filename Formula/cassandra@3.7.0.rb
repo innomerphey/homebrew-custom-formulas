@@ -69,6 +69,7 @@ class CassandraAT370 < Formula
     ENV.prepend_create_path "PYTHONPATH", pypath
     ENV.prepend_create_path "PYTHONPATH", libexec / "vendor/lib/python2.7/site-packages"
     ENV.prepend_path "PYTHONPATH", libexec / "lib/python2.7/site-packages"
+    ENV.prepend_path "PATH", "/usr/libexec"
     ENV["PYTHON"] = python2_path
 
   # Ensure site-packages directory exists
@@ -117,10 +118,11 @@ class CassandraAT370 < Formula
       s.gsub! "cassandra_storagedir=\"$CASSANDRA_HOME/data\"",
               "cassandra_storagedir=\"#{var}/lib/cassandra\""
 
+      java_home = `/usr/libexec/java_home -v 1.8`.strip
       s.gsub! "#JAVA_HOME=/usr/local/jdk6",
-              "JAVA_HOME=#{Language::Java.overridable_java_home_env("1.8")[:JAVA_HOME]}"
+              "JAVA_HOME=\"#{java_home}\""
     end
-
+    
     rm Dir["bin/*.bat", "bin/*.ps1"]
 
     # This breaks on `brew uninstall cassandra && brew install cassandra`
